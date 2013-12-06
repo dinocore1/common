@@ -10,13 +10,12 @@ import org.apache.commons.lang.math.FloatRange;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
-import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.util.Pair;
 
 import com.sciaps.common.hardware.Hardware;
+import com.sciaps.common.hardware.Hardware.RawSpectrumData;
 import com.sciaps.common.hardware.Spectrometer;
 import com.sciaps.common.hardware.Spectrum;
-import com.sciaps.common.hardware.Hardware.RawSpectrumData;
 
 public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 
