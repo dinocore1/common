@@ -1,4 +1,4 @@
-package com.sciaps.common;
+package com.sciaps.common.hardware;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,14 +11,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-public class Raw4SpectromerCSVFile {
+public class RawSpectromerCSVFile {
 
 	private static final Pattern sSplitRegex = Pattern.compile(",");
 
 	private File mFile;
 	private String[] mHeader;
 	
-	public Raw4SpectromerCSVFile(File f) throws IOException {
+	public RawSpectromerCSVFile(File f) throws IOException {
 		mFile = f;
 		
 		BufferedReader reader = new BufferedReader(new FileReader(mFile));

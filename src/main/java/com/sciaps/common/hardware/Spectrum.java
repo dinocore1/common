@@ -1,4 +1,4 @@
-package com.sciaps.common;
+package com.sciaps.common.hardware;
 
 import org.apache.commons.lang.math.FloatRange;
 

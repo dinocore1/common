@@ -1,10 +1,14 @@
-package com.sciaps.common;
+package com.sciaps.common.hardware;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.sciaps.common.hardware.ExecuteTest;
+import com.sciaps.common.hardware.OperationHandler;
+
 
 public class HardwareTest {
 

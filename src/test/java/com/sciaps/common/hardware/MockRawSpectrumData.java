@@ -1,8 +1,10 @@
-package com.sciaps.common;
+package com.sciaps.common.hardware;
 
 import org.apache.commons.lang.math.FloatRange;
 
-import com.sciaps.common.Hardware.RawSpectrumData;
+import com.sciaps.common.hardware.Hardware;
+import com.sciaps.common.hardware.Spectrum;
+import com.sciaps.common.hardware.Hardware.RawSpectrumData;
 
 public class MockRawSpectrumData implements Hardware.RawSpectrumData {
 

@@ -1,4 +1,4 @@
-package com.sciaps.common.utils;
+package com.sciaps.common.hardware.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
@@ -7,14 +7,16 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import org.apache.commons.lang.math.FloatRange;
+import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.util.Pair;
 
-import com.sciaps.common.Hardware;
-import com.sciaps.common.Hardware.RawSpectrumData;
-import com.sciaps.common.Spectrometer;
-import com.sciaps.common.Spectrum;
+import com.sciaps.common.hardware.Hardware;
+import com.sciaps.common.hardware.Spectrometer;
+import com.sciaps.common.hardware.Spectrum;
+import com.sciaps.common.hardware.Hardware.RawSpectrumData;
 
 public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 
@@ -56,9 +58,9 @@ public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 					
 					FloatRange spectrometerRange = spectrometer.getWavelengthRange();
 					if(wavelengthRange.overlapsRange(spectrometerRange)){
-						PolynomialSplineFunction spline = getSplineInterpolator(spectrometer, buffer);
+						UnivariateFunction spline = getSplineInterpolator(spectrometer, buffer);
 						final float localMax = Math.min(spectrometerRange.getMaximumFloat(), maxRequestedRange);
-						while(x < localMax && i < retval.length){
+						while(x <= localMax && i < retval.length){
 							retval[i++] = (float) spline.value(x);
 							x += descreteSize;
 						}
@@ -75,7 +77,7 @@ public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 		};
 	}
 	
-	public static PolynomialSplineFunction getSplineInterpolator(Spectrometer spectrometer, ByteBuffer buffer) {
+	public static UnivariateFunction getSplineInterpolator(Spectrometer spectrometer, ByteBuffer buffer) {
 		ShortBuffer shortbuf = buffer.asShortBuffer();
 		
 		//load the values in from the buffer
@@ -89,7 +91,7 @@ public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 		for(int i=0;i<y.length;i++){
 			x[i] = (float) spectrometer.getWavelengthMappingFunction().value(i);
 		}
-		SplineInterpolator interpolator = new SplineInterpolator();
+		UnivariateInterpolator interpolator = new SplineInterpolator();
 		return interpolator.interpolate(x, y);
 	}
 
@@ -100,7 +102,7 @@ public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 		}
 
 		
-		PolynomialSplineFunction spline = getSplineInterpolator(spectrometer, buffer);
+		UnivariateFunction spline = getSplineInterpolator(spectrometer, buffer);
 
 		float[] retval = new float[numSamples];
 		final float descreteSize = (range.getMaximumFloat() - range.getMinimumFloat()) / numSamples;

@@ -3,10 +3,19 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+group = 'com.sciaps'
+version = '0.1'
+description = 'Common classes for doing calibration and analysis'
+
+compileJava {
+  sourceCompatibility = 1.6
+  targetCompatibility = 1.6
+  //options.bootClasspath = "${System.getProperty('java6.home')}/jre/lib/rt.jar"
+}
+
 repositories {
   mavenCentral()
 }
-
 
 dependencies {
   compile 'commons-lang:commons-lang:2.6'

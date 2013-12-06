@@ -1,9 +1,12 @@
-package com.sciaps.common;
+package com.sciaps.common.hardware;
 
 import java.util.HashSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import com.sciaps.common.hardware.Hardware;
+
 
 public class MockLibsHardware implements Hardware {
 	

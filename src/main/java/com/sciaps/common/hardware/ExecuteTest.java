@@ -1,4 +1,4 @@
-package com.sciaps.common;
+package com.sciaps.common.hardware;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +6,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sciaps.common.Hardware.RawSpectrumData;
-import com.sciaps.common.Hardware.SpectrumDataCallback;
+import com.sciaps.common.hardware.Hardware.RawSpectrumData;
+import com.sciaps.common.hardware.Hardware.SpectrumDataCallback;
 
 public class ExecuteTest implements Runnable, SpectrumDataCallback {
 
