@@ -58,7 +58,7 @@ public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 					if(wavelengthRange.overlapsRange(spectrometerRange)){
 						PolynomialSplineFunction spline = getSplineInterpolator(spectrometer, buffer);
 						final float localMax = Math.min(spectrometerRange.getMaximumFloat(), maxRequestedRange);
-						while(x < localMax){
+						while(x < localMax && i < retval.length){
 							retval[i++] = (float) spline.value(x);
 							x += descreteSize;
 						}
@@ -79,7 +79,7 @@ public class BasicRawSpectrum implements Hardware.RawSpectrumData {
 		ShortBuffer shortbuf = buffer.asShortBuffer();
 		
 		//load the values in from the buffer
-		double[] y = new double[shortbuf.capacity()/2];
+		double[] y = new double[shortbuf.capacity()];
 		for(int i=0;i<y.length;i++){
 			y[i] = shortbuf.get(i);
 		}
