@@ -1,5 +1,9 @@
 package com.sciaps.common;
 
+import org.apache.commons.lang.math.FloatRange;
+
+import com.sciaps.common.Hardware.RawSpectrumData;
+
 public class MockRawSpectrumData implements Hardware.RawSpectrumData {
 
 	private int mId;
@@ -13,7 +17,7 @@ public class MockRawSpectrumData implements Hardware.RawSpectrumData {
 		return new Spectrum() {
 			
 			@Override
-			public float[] getWavelengthValues(float startWavelength, float endWavelen,
+			public float[] getWavelengthValues(FloatRange wavelengthRange,
 					int numSamples) {
 				
 				float[] retval = new float[2096];
@@ -22,6 +26,11 @@ public class MockRawSpectrumData implements Hardware.RawSpectrumData {
 				}
 				
 				return retval;
+			}
+
+			@Override
+			public RawSpectrumData getRawSpectrumData() {
+				return MockRawSpectrumData.this;
 			}
 		};
 	}

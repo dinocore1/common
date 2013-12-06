@@ -1,7 +1,9 @@
 package com.sciaps.common;
 
+import org.apache.commons.lang.math.FloatRange;
+
 public interface Spectrum {
 
-	
-	public float[] getWavelengthValues(float startWavelength, float endWavelen, int numSamples);
+	public Hardware.RawSpectrumData getRawSpectrumData();
+	public float[] getWavelengthValues(FloatRange wavelengthRange, int numSamples);
 }
