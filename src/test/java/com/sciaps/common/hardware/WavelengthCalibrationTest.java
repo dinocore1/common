@@ -8,6 +8,8 @@ import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+import org.jfree.chart.demo.BarChartDemo1;
+import org.jfree.ui.RefineryUtilities;
 import org.junit.Test;
 
 import com.sciaps.common.GaussianFunction;
@@ -24,7 +26,7 @@ public class WavelengthCalibrationTest {
 		return retval;
 	}
 	
-	public double[] copy(float[] in) {
+	public double[] copy(short[] in) {
 		double[] retval = new double[in.length];
 		for(int i=0;i<in.length;i++){
 			retval[i] = in[i];
@@ -34,11 +36,19 @@ public class WavelengthCalibrationTest {
 	
 	@Test
 	public void merceryTest() throws Exception {
+		
+		BarChartDemo1 demo = new BarChartDemo1("Bar Chart Demo 1");
+        demo.pack();
+        RefineryUtilities.centerFrameOnScreen(demo);
+        demo.setVisible(true);
+        
+		
 		RawSpectromerCSVFile rawspectrometerfile = new RawSpectromerCSVFile(new File("data/mercerylibsrawspectromers.csv"));
 		
-		float[] rawBuffer = Utils.loadRawPixels(rawspectrometerfile.loadSpectromerter(0));
+		short[] rawBuffer = Utils.loadRawPixels(rawspectrometerfile.loadSpectromerter(0));
 		
-		MagicFunctionMatcher m = new MagicFunctionMatcher(rawBuffer, null);
+		MagicFunctionMatcher m = new MagicFunctionMatcher(null, null);
+		double[] diff = m.diffGaussian(copy(rawBuffer), 1, 3, 3);
 		
 		PolynomialSplineFunction spline = new SplineInterpolator().interpolate(buildArray(0, rawBuffer.length), copy(rawBuffer));
 		//spline.derivative().

@@ -24,4 +24,5 @@ dependencies {
   compile 'org.slf4j:slf4j-api:1.7.+'
   compile 'ch.qos.logback:logback-classic:1.+'
   testCompile 'junit:junit:4.+'
+  testCompile 'org.jfree:jfreechart:1.0.15'
 }

@@ -5,10 +5,10 @@ import java.nio.ShortBuffer;
 
 public class Utils {
 
-	public static float[] loadRawPixels(ByteBuffer buffer){
+	public static short[] loadRawPixels(ByteBuffer buffer){
 		ShortBuffer shortBuffer = buffer.asShortBuffer();
 		
-		float[] retval = new float[shortBuffer.capacity()];
+		short[] retval = new short[shortBuffer.capacity()];
 		for(int i=0;i<retval.length;i++){
 			retval[i] = shortBuffer.get();
 		}
