@@ -46,29 +46,33 @@ public class MagicFunctionMatcher {
 	}
 	
 	
-	private static final int filterPixeles = 64;
+	
 	
 	public static double[] getScaleSpace(double[] data, float sigma){
 		GaussianFunction f = GaussianFunction.normalized(0, sigma);
 		
-		double[] filter = new double[filterPixeles];
+		float radius = sigma*3;
+		int r = 2*((int)Math.ceil(radius)) + 1;
+		double[] filter = new double[r];
 		
-		float xdiff = 4 / filterPixeles;
+		float xdiff = 2*radius / r;
 		
-		for(int i=0;i<filterPixeles;i++){
-			filter[i] = f.value( i*xdiff - 2);
+		float total = 0;
+		for(int i=0;i<filter.length;i++){
+			filter[i] = f.value( i*xdiff - radius);
+			total += filter[i];
+		}
+		
+		for(int i=0;i<filter.length;i++){
+			filter[i] /= total;
 		}
 		
 		return Filter.filter(data, filter);
 	}
 	
 	
-	private final float startOctive = 0.3f;
 	public double[] diffGaussian(double[] data, int octive, int k, int maxk) {
-		
-		float octiveBaseSigma = octive * startOctive;
-		
-		return MathArrays.ebeSubtract(getScaleSpace(data, octiveBaseSigma + (k * startOctive/maxk)), getScaleSpace(data, octiveBaseSigma));
+		return MathArrays.ebeSubtract(getScaleSpace(data, octive), getScaleSpace(data, 2*octive));
 	}
 	
 	public MagicFunctionMatcher(float[] a, float[] b) {
