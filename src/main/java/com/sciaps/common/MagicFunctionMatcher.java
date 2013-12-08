@@ -1,5 +1,7 @@
 package com.sciaps.common;
 
+import java.util.ArrayList;
+
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.optimization.fitting.PolynomialFitter;
 import org.apache.commons.math3.optimization.general.LevenbergMarquardtOptimizer;
@@ -73,6 +75,19 @@ public class MagicFunctionMatcher {
 	
 	public double[] diffGaussian(double[] data, int octive, int k, int maxk) {
 		return MathArrays.ebeSubtract(getScaleSpace(data, octive), getScaleSpace(data, 2*octive));
+	}
+	
+	public static ArrayList<Integer> getKeyPoints(double[] data) {
+		ArrayList<Integer> keypoints = new ArrayList<Integer>();
+		
+		for(int i=1;i<data.length-1;i++){
+			if((data[i] > data[i+1] && data[i] > data[i-1]) ||
+				(data[i] < data[i+1] && data[i] < data[i-1])) {
+				//found peek or valley
+				keypoints.add(i);
+			}
+		}
+		return keypoints;
 	}
 	
 	public MagicFunctionMatcher(float[] a, float[] b) {

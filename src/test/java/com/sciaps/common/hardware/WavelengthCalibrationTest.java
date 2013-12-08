@@ -2,6 +2,7 @@ package com.sciaps.common.hardware;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import org.apache.commons.lang.math.FloatRange;
 import org.apache.commons.math3.analysis.UnivariateFunction;
@@ -74,6 +75,7 @@ public class WavelengthCalibrationTest {
 		
 		double[] diff = m.diffGaussian(copy(rawBuffer), 12, 3, 3);
 		mDataset.addSeries(3, createDataset(diff));
+		ArrayList<Integer> keypoints = m.getKeyPoints(diff);
 		
 		
 
