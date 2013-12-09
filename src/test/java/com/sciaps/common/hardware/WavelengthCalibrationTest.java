@@ -8,6 +8,7 @@ import org.apache.commons.lang.math.FloatRange;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.jfree.chart.demo.BarChartDemo1;
 import org.jfree.data.xy.DefaultXYDataset;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import com.sciaps.common.GaussianFunction;
 import com.sciaps.common.MagicFunctionMatcher;
 import com.sciaps.common.SumFunction;
+import com.sciaps.common.MagicFunctionMatcher.KeyPoint;
 import com.sciaps.common.test.GraphView;
 
 public class WavelengthCalibrationTest {
@@ -69,10 +71,10 @@ public class WavelengthCalibrationTest {
 		double[] idealraw;
 		{
 			UnivariateFunction ideaMercery = new SumFunction(new UnivariateFunction[] {
-					new GaussianFunction(1, 253.65, 0.03, 0),
-					new GaussianFunction(1, 184.95, 0.03, 0),
-					new GaussianFunction(1, 237.83, 0.03, 0),
-					new GaussianFunction(1, 194.23, 0.03, 0),
+					new GaussianFunction(10000, 253.65, 0.03, 0),
+					new GaussianFunction(10000, 184.95, 0.03, 0),
+					new GaussianFunction(10000, 237.83, 0.03, 0),
+					new GaussianFunction(10000, 194.23, 0.03, 0),
 			});
 			
 			idealraw = new double[2096];
@@ -83,17 +85,26 @@ public class WavelengthCalibrationTest {
 		}
 
 		MagicFunctionMatcher m = new MagicFunctionMatcher(rawBuffer, idealraw, 2);
-		//mDataset.addSeries(1, createDataset(m.getScaleSpace(copy(rawBuffer), 12f)));
-		//mDataset.addSeries(2, createDataset(m.getScaleSpace(copy(rawBuffer), 24f)));
 		
+		double[] srcdiff = m.diffGaussian(rawBuffer, 12, 3, 3);
+		ArrayList<KeyPoint> srckp = MagicFunctionMatcher.getKeyPoints(srcdiff);
 		
+		double[] destdiff = m.diffGaussian(idealraw, 12, 3, 3);
+		ArrayList<KeyPoint> destkp = MagicFunctionMatcher.getKeyPoints(destdiff);
 		
-		double[] diff = m.diffGaussian(rawBuffer, 12, 3, 3);
-		//mDataset.addSeries(3, createDataset(diff));
-		ArrayList<MagicFunctionMatcher.KeyPoint> keypoints = m.getKeyPoints(diff);
+		PolynomialFunction xMapping = MagicFunctionMatcher.PolynomialFit2nd(
+				new double[]{srckp.get(0).getX(), srckp.get(1).getX(), srckp.get(3).getX()},
+				new double[]{destkp.get(0).getX(), destkp.get(1).getX(), destkp.get(7).getX()});
 		
+		mDataset.addSeries(1, createDataset(rawBuffer));
+		mDataset.addSeries(2, createDataset(idealraw));
 		
-		
+		double[][] calibratds = new double[2][rawBuffer.length];
+		for(int i=0;i<rawBuffer.length;i++){
+			calibratds[0][i] = xMapping.value(i);
+			calibratds[1][i] = rawBuffer[i];
+		}
+		mDataset.addSeries(3, calibratds);
 
 		GraphView demo = new GraphView("Mercery Test", mDataset);
 		demo.pack();
