@@ -63,31 +63,37 @@ public class WavelengthCalibrationTest {
 	public void merceryTest() throws Exception {
 
 		RawSpectromerCSVFile rawspectrometerfile = new RawSpectromerCSVFile(new File("data/mercerylibsrawspectromers.csv"));
-		short[] rawBuffer = Utils.loadRawPixels(rawspectrometerfile.loadSpectromerter(0));
+		double[] rawBuffer = copy(Utils.loadRawPixels(rawspectrometerfile.loadSpectromerter(0)));
 		
-		mDataset.addSeries(0, createDataset(copy(rawBuffer)));
+		
+		double[] idealraw;
+		{
+			UnivariateFunction ideaMercery = new SumFunction(new UnivariateFunction[] {
+					new GaussianFunction(1, 253.65, 0.03, 0),
+					new GaussianFunction(1, 184.95, 0.03, 0),
+					new GaussianFunction(1, 237.83, 0.03, 0),
+					new GaussianFunction(1, 194.23, 0.03, 0),
+			});
+			
+			idealraw = new double[2096];
+			final double xdiff = (260.0 - 185.0) / idealraw.length;
+			for(int i=0;i<idealraw.length;i++){
+				idealraw[i] = ideaMercery.value(i*xdiff + 185);
+			}
+		}
 
-		MagicFunctionMatcher m = new MagicFunctionMatcher(null, null);
-		mDataset.addSeries(1, createDataset(m.getScaleSpace(copy(rawBuffer), 12f)));
-		mDataset.addSeries(2, createDataset(m.getScaleSpace(copy(rawBuffer), 24f)));
+		MagicFunctionMatcher m = new MagicFunctionMatcher(rawBuffer, idealraw, 2);
+		//mDataset.addSeries(1, createDataset(m.getScaleSpace(copy(rawBuffer), 12f)));
+		//mDataset.addSeries(2, createDataset(m.getScaleSpace(copy(rawBuffer), 24f)));
 		
 		
 		
-		double[] diff = m.diffGaussian(copy(rawBuffer), 12, 3, 3);
-		mDataset.addSeries(3, createDataset(diff));
-		ArrayList<Integer> keypoints = m.getKeyPoints(diff);
+		double[] diff = m.diffGaussian(rawBuffer, 12, 3, 3);
+		//mDataset.addSeries(3, createDataset(diff));
+		ArrayList<MagicFunctionMatcher.KeyPoint> keypoints = m.getKeyPoints(diff);
 		
 		
-
-		PolynomialSplineFunction spline = new SplineInterpolator().interpolate(buildArray(0, rawBuffer.length), copy(rawBuffer));
-		//spline.derivative().
-
-		UnivariateFunction ideaMercery = new SumFunction(new UnivariateFunction[] {
-				new GaussianFunction(1, 253.65, 0.03, 0),
-				new GaussianFunction(1, 184.95, 0.03, 0),
-				new GaussianFunction(1, 237.83, 0.03, 0),
-				new GaussianFunction(1, 194.23, 0.03, 0),
-		});
+		
 
 		GraphView demo = new GraphView("Mercery Test", mDataset);
 		demo.pack();

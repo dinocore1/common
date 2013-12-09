@@ -3,52 +3,14 @@ package com.sciaps.common;
 import java.util.ArrayList;
 
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
-import org.apache.commons.math3.optimization.fitting.PolynomialFitter;
-import org.apache.commons.math3.optimization.general.LevenbergMarquardtOptimizer;
 import org.apache.commons.math3.util.MathArrays;
 
 public class MagicFunctionMatcher {
 
-	public static class Rect {
-		public float left;
-		public float right;
-		public float top;
-		public float bottom;
-		
-		public Rect(float l, float r, float t, float b){
-			this.left = l;
-			this.right = r;
-			this.top = t;
-			this.bottom = b;
-			
-			if(l > r || b > t){
-				throw new RuntimeException("not a valid rectangle");
-			}
-		}
-		
-		public float width() {
-			return right - left;
-		}
-		
-		public float height() {
-			return top - bottom;
-		}
+	public static class KeyPoint {
+		double xhat;
+		public double q;
 	}
-	
-	private static int findYMax(float[] a, int start, int len){
-		float yMax = Float.NEGATIVE_INFINITY;
-		int x = 0;
-		for(int i=start;i<len;i++){
-			if(a[i] > yMax){
-				yMax = a[i];
-				x = i;
-			}
-		}
-		return x;
-	}
-	
-	
-	
 	
 	public static double[] getScaleSpace(double[] data, float sigma){
 		GaussianFunction f = GaussianFunction.normalized(0, sigma);
@@ -77,20 +39,47 @@ public class MagicFunctionMatcher {
 		return MathArrays.ebeSubtract(getScaleSpace(data, octive), getScaleSpace(data, 2*octive));
 	}
 	
-	public static ArrayList<Integer> getKeyPoints(double[] data) {
-		ArrayList<Integer> keypoints = new ArrayList<Integer>();
+	public static ArrayList<KeyPoint> getKeyPoints(double[] data) {
+		ArrayList<KeyPoint> keypoints = new ArrayList<KeyPoint>();
+		
+		double max = Double.NEGATIVE_INFINITY;
+		for(int i=0;i<data.length;i++){
+			max = Math.max(max, Math.abs(data[i]));
+		}
 		
 		for(int i=1;i<data.length-1;i++){
 			if((data[i] > data[i+1] && data[i] > data[i-1]) ||
 				(data[i] < data[i+1] && data[i] < data[i-1])) {
-				//found peek or valley
-				keypoints.add(i);
+				//found local extrema (peek or valley)
+				
+				PolynomialFunction f = new PolynomialFunction(new double[]{
+						data[i], 
+						DiscreteDerivatives.first(data, i),
+						0.5*DiscreteDerivatives.second(data, i)
+				});
+				
+				PolynomialFunction f1 = f.polynomialDerivative();
+				double xhat = ExactRootSolver.linearRoot(f1);
+				double q = Math.abs(f.value(xhat)) / max;
+				
+				if(q > 0.25){
+					KeyPoint kp = new KeyPoint();
+					kp.xhat = xhat;
+					kp.q = q;
+					keypoints.add(kp);
+				}
 			}
 		}
 		return keypoints;
 	}
 	
-	public MagicFunctionMatcher(float[] a, float[] b) {
+	public MagicFunctionMatcher(double[] src, double[] dest, int xorder) {
+		
+		double[] srcdiff = diffGaussian(src, 12, 3, 3);
+		getKeyPoints(srcdiff);
+		
+		double[] destdiff = diffGaussian(dest, 12, 3, 3);
+		getKeyPoints(destdiff);
 		
 		
 		
