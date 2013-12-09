@@ -10,6 +10,9 @@ public class MagicFunctionMatcher {
 	public static class KeyPoint {
 		double xhat;
 		public double q;
+		public double[] data;
+		
+		
 	}
 	
 	public static double[] getScaleSpace(double[] data, float sigma){
@@ -66,6 +69,10 @@ public class MagicFunctionMatcher {
 					KeyPoint kp = new KeyPoint();
 					kp.xhat = xhat;
 					kp.q = q;
+					
+					double fp1 = DiscreteDerivatives.first(data, i-1);
+					double fp2 = DiscreteDerivatives.first(data, i+1);
+					
 					keypoints.add(kp);
 				}
 			}
