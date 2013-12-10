@@ -11,6 +11,7 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DecompositionSolver;
 import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.QRDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.MathArrays;
@@ -29,6 +30,22 @@ public class MagicFunctionMatcher {
 				y[0], 
 				y[1],
 				y[2]
+				}));
+		
+		PolynomialFunction polynomial = new PolynomialFunction(solution.toArray());
+		return polynomial;
+	}
+	
+	public static PolynomialFunction PolynomialFit1st(double[] x, double[] y) {
+		RealMatrix coefficients = new Array2DRowRealMatrix(new double[][]{
+				{1, x[0]},
+				{1, x[1]},
+		});
+		DecompositionSolver solver = new LUDecomposition(coefficients).getSolver();
+		RealVector solution = solver.solve(new ArrayRealVector(new double[]
+				{
+				y[0], 
+				y[1]
 				}));
 		
 		PolynomialFunction polynomial = new PolynomialFunction(solution.toArray());
@@ -120,6 +137,15 @@ public class MagicFunctionMatcher {
 		
 	}
 	
+	private static class KeyPointXValueComparator implements Comparator<KeyPoint> {
+
+		@Override
+		public int compare(KeyPoint o1, KeyPoint o2) {
+			return Double.compare(o1.getX(), o2.getX());
+		}
+		
+	}
+	
 	public static double[] getScaleSpace(double[] data, float sigma){
 		GaussianFunction f = GaussianFunction.normalized(0, sigma);
 		
@@ -193,18 +219,35 @@ public class MagicFunctionMatcher {
 		double[] destdiff = diffGaussian(dest, 12, 3, 3);
 		mDestKeypoints = getKeyPoints(destdiff);
 		
+		int min = Math.min(mSrckeypoints.size(), mDestKeypoints.size());
+		int max = Math.max(mSrckeypoints.size(), mDestKeypoints.size());
 		
-		for(int a=0;a<mSrckeypoints.size();a++){
-			KeyPoint srckp = mSrckeypoints.get(a);
-			ArrayList<KeyPoint> keypoints = getNearestKeypoints(srckp, mDestKeypoints);
-			for(int b=0;b<keypoints.size();b++){
-				KeyPoint destkp = mDestKeypoints.get(b);
-				
-			}
-			
+		RealMatrix W = new Array2DRowRealMatrix(min, 3);
+		for(int i=0;i<min;i++){
+			double[] row = new double[3];
+			row[0] = 1;
+			row[1] = mSrckeypoints.get(i).getX();
+			row[2] = row[1]*row[1];
+			W.setRow(i, row);
+		}
+		
+		DecompositionSolver solver = new QRDecomposition(W).getSolver();
+		
+		ArrayRealVector y = new ArrayRealVector(min);
+		for(int i=0;i<min;i++){
+			y.setEntry(i, mDestKeypoints.get(i).getX());
+		}
+		RealVector solution = solver.solve(y);
+		PolynomialFunction xmapper = new PolynomialFunction(solution.toArray());
+		
+		double error = 0;
+		for(int i=0;i<min;i++){
+			double srcx = mSrckeypoints.get(i).getX();
+			error += xmapper.value(srcx); 
 		}
 		
 	}
+	
 	
 	public double trySolution(ArrayList<KeyPoint> srcPts, ArrayList<KeyPoint> destPts) {
 		
@@ -212,8 +255,29 @@ public class MagicFunctionMatcher {
 				new double[]{srcPts.get(0).getX(), srcPts.get(1).getX(), srcPts.get(2).getX()},
 				new double[]{destPts.get(0).getX(), destPts.get(1).getX(), destPts.get(2).getX()});
 		
+		double srcmin, srcmax, destmin, destmax;
+		srcmin = Double.POSITIVE_INFINITY;
+		destmin = Double.POSITIVE_INFINITY;
+		destmax = Double.NEGATIVE_INFINITY;
+		srcmax = Double.NEGATIVE_INFINITY;
+		
+		for(KeyPoint k : srcPts){
+			srcmin = Math.min(srcmin, k.getY());
+			//src
+		}
+		
+		PolynomialFunction yMapping = PolynomialFit1st(
+				new double[]{srcPts.get(0).getY(), srcPts.get(1).getY()},
+				new double[]{destPts.get(0).getY()});
+		
 		double error = 0;
-		for(int i=0;i<srcRaw.length;i++){
+		for(int i=0;i<mSrckeypoints.size();i++){
+			KeyPoint skp = mSrckeypoints.get(i);
+			if(!srcPts.contains(skp)){
+				double actual = skp.getX();
+				double estimate = xMapping.value( skp.getX() );
+				
+			}
 			int destx = (int) Math.round( xMapping.value(i) );
 			
 			double ysrc = srcRaw[i];

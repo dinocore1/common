@@ -47,4 +47,21 @@ public class MatrixTests {
 		
 		Assert.assertArrayEquals(new double[]{-25.2, 2, 1}, solution.toArray(),0.2);
 	}
+	
+	@Test
+	public void afineMapTest() {
+		
+		RealMatrix A = new Array2DRowRealMatrix(new double[][]{
+				{1, 0, 0},
+				{0, 2, 0},
+				{0, 0, 3}
+		});
+		
+		DecompositionSolver solver = new QRDecomposition(A).getSolver();
+		RealVector solution = solver.solve(new ArrayRealVector(new double[]{5, 10, 15}));
+		
+		Assert.assertArrayEquals(new double[]{5, 0, 0, 0}, solution.toArray(), 0.00001);
+		
+		
+	}
 }
