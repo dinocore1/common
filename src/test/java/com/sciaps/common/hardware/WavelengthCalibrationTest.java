@@ -86,22 +86,14 @@ public class WavelengthCalibrationTest {
 
 		MagicFunctionMatcher m = new MagicFunctionMatcher(rawBuffer, idealraw, 2);
 		
-		double[] srcdiff = m.diffGaussian(rawBuffer, 12, 3, 3);
-		ArrayList<KeyPoint> srckp = MagicFunctionMatcher.getKeyPoints(srcdiff);
 		
-		double[] destdiff = m.diffGaussian(idealraw, 12, 3, 3);
-		ArrayList<KeyPoint> destkp = MagicFunctionMatcher.getKeyPoints(destdiff);
 		
-		PolynomialFunction xMapping = MagicFunctionMatcher.PolynomialFit2nd(
-				new double[]{srckp.get(0).getX(), srckp.get(1).getX(), srckp.get(3).getX()},
-				new double[]{destkp.get(0).getX(), destkp.get(1).getX(), destkp.get(7).getX()});
-		
-		mDataset.addSeries(1, createDataset(rawBuffer));
+		//mDataset.addSeries(1, createDataset(rawBuffer));
 		mDataset.addSeries(2, createDataset(idealraw));
 		
 		double[][] calibratds = new double[2][rawBuffer.length];
 		for(int i=0;i<rawBuffer.length;i++){
-			calibratds[0][i] = xMapping.value(i);
+			calibratds[0][i] = m.getXmapper().value(i);
 			calibratds[1][i] = rawBuffer[i];
 		}
 		mDataset.addSeries(3, calibratds);

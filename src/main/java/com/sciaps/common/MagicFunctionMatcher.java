@@ -51,6 +51,12 @@ public class MagicFunctionMatcher {
 		PolynomialFunction polynomial = new PolynomialFunction(solution.toArray());
 		return polynomial;
 	}
+	
+	public class Solution {
+		public int[] mSrcPts;
+		public int[] mDestPts;
+		double error;
+	}
 
 	public static class KeyPoint {
 		
@@ -104,16 +110,16 @@ public class MagicFunctionMatcher {
 		
 		@Override
 		public String toString() {
-			return String.format("[%d %s]", mX, Arrays.toString(fingerprint));
+			return String.format("[%d %s]", mX, Arrays.toString(getFingerprint()));
 		}
 		
 	}
 	
-	private static class KeyPointComparator implements Comparator<KeyPoint> {
+	private static class FingerprintDistance implements Comparator<KeyPoint> {
 
 		private final KeyPoint mKeypoint;
 		
-		public KeyPointComparator(KeyPoint kp) {
+		public FingerprintDistance(KeyPoint kp) {
 			mKeypoint = kp;
 		}
 		
@@ -137,14 +143,15 @@ public class MagicFunctionMatcher {
 		
 	}
 	
-	private static class KeyPointXValueComparator implements Comparator<KeyPoint> {
+	
+	
+	private static Comparator<KeyPoint> sKeypointX = new Comparator<KeyPoint>()  {
 
 		@Override
 		public int compare(KeyPoint o1, KeyPoint o2) {
 			return Double.compare(o1.getX(), o2.getX());
 		}
-		
-	}
+	};
 	
 	public static double[] getScaleSpace(double[] data, float sigma){
 		GaussianFunction f = GaussianFunction.normalized(0, sigma);
@@ -172,6 +179,8 @@ public class MagicFunctionMatcher {
 	private double[] destRaw;
 	private ArrayList<KeyPoint> mSrckeypoints;
 	private ArrayList<KeyPoint> mDestKeypoints;
+	private PolynomialFunction mXmapper;
+	private int modelOrder;
 	
 	
 	public double[] diffGaussian(double[] data, int octive, int k, int maxk) {
@@ -194,7 +203,7 @@ public class MagicFunctionMatcher {
 				KeyPoint kp = new KeyPoint(i, data);
 				kp.q = Math.abs(kp.getY()) / max;
 				
-				if(kp.q > 0.20){
+				if(kp.q > 0.2){
 					keypoints.add(kp);
 				}
 			}
@@ -204,14 +213,15 @@ public class MagicFunctionMatcher {
 	
 	private ArrayList<KeyPoint> getNearestKeypoints(KeyPoint kp, ArrayList<KeyPoint> points) {
 		ArrayList<KeyPoint> retval = new ArrayList<KeyPoint>(points);
-		Collections.sort(retval, new KeyPointComparator(kp));
+		Collections.sort(retval, new FingerprintDistance(kp));
 		return retval;
 	}
 	
-	public MagicFunctionMatcher(double[] src, double[] dest, int xorder) {
+	public MagicFunctionMatcher(double[] src, double[] dest, int modelOrder) {
 		
 		this.srcRaw = src;
 		this.destRaw = dest;
+		this.modelOrder = modelOrder;
 		
 		double[] srcdiff = diffGaussian(src, 12, 3, 3);
 		mSrckeypoints = getKeyPoints(srcdiff);
@@ -219,73 +229,91 @@ public class MagicFunctionMatcher {
 		double[] destdiff = diffGaussian(dest, 12, 3, 3);
 		mDestKeypoints = getKeyPoints(destdiff);
 		
-		int min = Math.min(mSrckeypoints.size(), mDestKeypoints.size());
-		int max = Math.max(mSrckeypoints.size(), mDestKeypoints.size());
 		
-		RealMatrix W = new Array2DRowRealMatrix(min, 3);
-		for(int i=0;i<min;i++){
+		
+		
+		
+		recurseSearch(new Rect(0, mSrckeypoints.size()-1), new Rect(0, mDestKeypoints.size()-1));
+		recurseSearch(new Rect(mSrckeypoints.size()/2, mSrckeypoints.size()-1), new Rect(0, mDestKeypoints.size()/2));
+		recurseSearch(new Rect(0, mSrckeypoints.size()/2), new Rect(mDestKeypoints.size()/2, mDestKeypoints.size()-1));
+		
+	}
+	
+	private static class Rect {
+		int l, r;
+		
+		public Rect(int l, int r) {
+			this.l = l;
+			this.r = r;
+		}
+
+		int width() {
+			return r - l;
+		}
+	}
+	
+	private void recurseSearch(Rect srcRect, Rect destRect) {
+		
+		if(srcRect.width() < 3 || destRect.width() < 3){
+			return;
+		}
+		
+		ArrayList<KeyPoint> srcPts = new ArrayList<KeyPoint>();
+		ArrayList<KeyPoint> destPts = new ArrayList<KeyPoint>();
+		
+		
+		srcPts.add(mSrckeypoints.get(srcRect.l));
+		
+		srcPts.add(mSrckeypoints.get(srcRect.r));
+		
+	}
+
+	
+	public PolynomialFunction getXmapper() {
+		return mXmapper;
+	}
+	
+	private double calcError(PolynomialFunction xmapper) {
+		double error = 0;
+		ArrayList<KeyPoint> availableDestKP = new ArrayList<KeyPoint>(mDestKeypoints);
+		for(KeyPoint kp : mSrckeypoints){
+			double predicted = xmapper.value(kp.getX());
+			double minDistance = Double.POSITIVE_INFINITY;
+			int nearest = 0;
+			for(int i=0;i<availableDestKP.size();i++){
+				double distance = Math.abs(predicted - availableDestKP.get(i).getX());
+				if(distance < minDistance){
+					nearest = i;
+					minDistance = distance;
+				}
+			}
+			availableDestKP.remove(nearest);
+			error += minDistance;
+		}
+		return error;
+	}
+	
+	public double trySolution(ArrayList<KeyPoint> srcPts, ArrayList<KeyPoint> destPts) {
+		
+		RealMatrix W = new Array2DRowRealMatrix(srcPts.size(), 3);
+		for(int i=0;i<srcPts.size();i++){
 			double[] row = new double[3];
 			row[0] = 1;
-			row[1] = mSrckeypoints.get(i).getX();
+			row[1] = srcPts.get(i).getX();
 			row[2] = row[1]*row[1];
 			W.setRow(i, row);
 		}
 		
 		DecompositionSolver solver = new QRDecomposition(W).getSolver();
 		
-		ArrayRealVector y = new ArrayRealVector(min);
-		for(int i=0;i<min;i++){
-			y.setEntry(i, mDestKeypoints.get(i).getX());
+		ArrayRealVector y = new ArrayRealVector(srcPts.size());
+		for(int i=0;i<srcPts.size();i++){
+			y.setEntry(i, destPts.get(i).getX());
 		}
 		RealVector solution = solver.solve(y);
 		PolynomialFunction xmapper = new PolynomialFunction(solution.toArray());
 		
-		double error = 0;
-		for(int i=0;i<min;i++){
-			double srcx = mSrckeypoints.get(i).getX();
-			error += xmapper.value(srcx); 
-		}
-		
-	}
-	
-	
-	public double trySolution(ArrayList<KeyPoint> srcPts, ArrayList<KeyPoint> destPts) {
-		
-		PolynomialFunction xMapping = PolynomialFit2nd(
-				new double[]{srcPts.get(0).getX(), srcPts.get(1).getX(), srcPts.get(2).getX()},
-				new double[]{destPts.get(0).getX(), destPts.get(1).getX(), destPts.get(2).getX()});
-		
-		double srcmin, srcmax, destmin, destmax;
-		srcmin = Double.POSITIVE_INFINITY;
-		destmin = Double.POSITIVE_INFINITY;
-		destmax = Double.NEGATIVE_INFINITY;
-		srcmax = Double.NEGATIVE_INFINITY;
-		
-		for(KeyPoint k : srcPts){
-			srcmin = Math.min(srcmin, k.getY());
-			//src
-		}
-		
-		PolynomialFunction yMapping = PolynomialFit1st(
-				new double[]{srcPts.get(0).getY(), srcPts.get(1).getY()},
-				new double[]{destPts.get(0).getY()});
-		
-		double error = 0;
-		for(int i=0;i<mSrckeypoints.size();i++){
-			KeyPoint skp = mSrckeypoints.get(i);
-			if(!srcPts.contains(skp)){
-				double actual = skp.getX();
-				double estimate = xMapping.value( skp.getX() );
-				
-			}
-			int destx = (int) Math.round( xMapping.value(i) );
-			
-			double ysrc = srcRaw[i];
-			double ydest = destRaw[destx];
-			
-			error += Math.abs(ydest - ysrc) * 1.0/srcRaw.length;
-		}
-		
+		double error = calcError(xmapper);
 		return error;
 		
 	}
