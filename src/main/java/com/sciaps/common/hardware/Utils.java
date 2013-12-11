@@ -5,10 +5,16 @@ import java.nio.ShortBuffer;
 
 public class Utils {
 
-	public static short[] loadRawPixels(ByteBuffer buffer){
+	/**
+	 * Loads the data in a ByteBuffer into a int array. Note: this assumes that
+	 * the underlying bytebuffer is using unsigned 16-bit numbers to hold raw pixel data.
+	 * @param buffer
+	 * @return
+	 */
+	public static int[] loadRawPixels(ByteBuffer buffer){
 		ShortBuffer shortBuffer = buffer.asShortBuffer();
 		
-		short[] retval = new short[shortBuffer.capacity()];
+		int[] retval = new int[shortBuffer.capacity()];
 		for(int i=0;i<retval.length;i++){
 			retval[i] = shortBuffer.get();
 		}

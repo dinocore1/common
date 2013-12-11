@@ -1,4 +1,4 @@
-package com.sciaps.common;
+package com.sciaps.common.math;
 
 import org.apache.commons.math3.analysis.UnivariateFunction;
 

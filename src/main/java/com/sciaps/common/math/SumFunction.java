@@ -1,4 +1,4 @@
-package com.sciaps.common;
+package com.sciaps.common.math;
 
 import java.util.ArrayList;
 import java.util.Collection;

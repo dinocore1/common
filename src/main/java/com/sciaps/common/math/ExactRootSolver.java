@@ -19,7 +19,7 @@
  * along with ManetSim.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.sciaps.common;
+package com.sciaps.common.math;
 
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 

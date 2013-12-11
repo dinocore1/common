@@ -1,10 +1,12 @@
-package com.sciaps.common;
+package com.sciaps.common.math;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+
+import javax.management.RuntimeErrorException;
 
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -19,21 +21,26 @@ import org.apache.commons.math3.util.MathArrays;
 public class MagicFunctionMatcher {
 	
 	public static PolynomialFunction PolynomialFit2nd(double[] x, double[] y) {
-		RealMatrix coefficients = new Array2DRowRealMatrix(new double[][]{
-				{1, x[0], x[0]*x[0]},
-				{1, x[1], x[1]*x[1]},
-				{1, x[2], x[2]*x[2]}
-		});
-		DecompositionSolver solver = new LUDecomposition(coefficients).getSolver();
-		RealVector solution = solver.solve(new ArrayRealVector(new double[]
-				{
-				y[0], 
-				y[1],
-				y[2]
-				}));
+		if(x.length != y.length){
+			throw new RuntimeException("x y arrays must be same length");
+		}
+		RealMatrix W = new Array2DRowRealMatrix(x.length, 3);
+		for(int i=0;i<x.length;i++){
+			double[] row = new double[3];
+			row[0] = 1;
+			row[1] = x[i];
+			row[2] = row[1]*row[1];
+			W.setRow(i, row);
+		}
 		
-		PolynomialFunction polynomial = new PolynomialFunction(solution.toArray());
-		return polynomial;
+		DecompositionSolver solver = new QRDecomposition(W).getSolver();
+		
+		ArrayRealVector yv = new ArrayRealVector(x.length);
+		for(int i=0;i<y.length;i++){
+			yv.setEntry(i, y[i]);
+		}
+		RealVector solution = solver.solve(yv);
+		return new PolynomialFunction(solution.toArray());
 	}
 	
 	public static PolynomialFunction PolynomialFit1st(double[] x, double[] y) {
@@ -53,8 +60,20 @@ public class MagicFunctionMatcher {
 	}
 	
 	public class Solution {
-		public int[] mSrcPts;
-		public int[] mDestPts;
+		public ArrayList<KeyPoint> sourceKeypoints = new ArrayList<KeyPoint>();
+		public ArrayList<KeyPoint> destKeypoints = new ArrayList<KeyPoint>();
+		PolynomialFunction xmapper;
+		double error;
+	}
+	
+	public class PartialSolution {
+		public PartialSolution(int[] src, int[] dest, double error) {
+			System.arraycopy(src, 0, srcCluster, 0, 3);
+			System.arraycopy(dest, 0, destCluster, 0, 3);
+			this.error = error;
+		}
+		int[] srcCluster = new int[3];
+		int[] destCluster = new int[3];
 		double error;
 	}
 
@@ -211,7 +230,7 @@ public class MagicFunctionMatcher {
 		return keypoints;
 	}
 	
-	private ArrayList<KeyPoint> getNearestKeypoints(KeyPoint kp, ArrayList<KeyPoint> points) {
+	private static ArrayList<KeyPoint> getNearestKeypoints(KeyPoint kp, ArrayList<KeyPoint> points) {
 		ArrayList<KeyPoint> retval = new ArrayList<KeyPoint>(points);
 		Collections.sort(retval, new FingerprintDistance(kp));
 		return retval;
@@ -230,42 +249,47 @@ public class MagicFunctionMatcher {
 		mDestKeypoints = getKeyPoints(destdiff);
 		
 		
+		int[] srcpts = new int[]{0,1,2};
 		
+		System.out.print("");
 		
-		
-		recurseSearch(new Rect(0, mSrckeypoints.size()-1), new Rect(0, mDestKeypoints.size()-1));
-		recurseSearch(new Rect(mSrckeypoints.size()/2, mSrckeypoints.size()-1), new Rect(0, mDestKeypoints.size()/2));
-		recurseSearch(new Rect(0, mSrckeypoints.size()/2), new Rect(mDestKeypoints.size()/2, mDestKeypoints.size()-1));
 		
 	}
 	
-	private static class Rect {
-		int l, r;
-		
-		public Rect(int l, int r) {
-			this.l = l;
-			this.r = r;
-		}
-
-		int width() {
-			return r - l;
+	private void find3Cluster(ArrayList<KeyPoint> points, int[] result) {
+		for(int i=result[2];i<points.size();i++){
+			if(points.get(result[0]).getFingerprint()[0] < 0 &&
+			 points.get(result[1]).getFingerprint()[0] > 0 &&
+			 points.get(result[2]).getFingerprint()[0] < 0){
+				return;
+			}
+			result[0] = i-2;
+			result[1] = i-1;
+			result[2] = i;
 		}
 	}
 	
-	private void recurseSearch(Rect srcRect, Rect destRect) {
+	
+	private double findBestCluster(int[] src, int[] dest){
+		int[] bestCluster = new int[3];
+		System.arraycopy(dest, 0, bestCluster, 0, 3);
+		double error = getSolutionError(src, dest);
 		
-		if(srcRect.width() < 3 || destRect.width() < 3){
-			return;
+		for(int i=dest[2]+1;i<mDestKeypoints.size();i++){
+			dest[0] = i-2;
+			dest[1] = i-1;
+			dest[2] = i;
+			double localError = getSolutionError(src, dest);
+			if(localError < error){
+				error = localError;
+				bestCluster[0] = dest[0];
+				bestCluster[1] = dest[1];
+				bestCluster[2] = dest[2];
+			}
 		}
 		
-		ArrayList<KeyPoint> srcPts = new ArrayList<KeyPoint>();
-		ArrayList<KeyPoint> destPts = new ArrayList<KeyPoint>();
-		
-		
-		srcPts.add(mSrckeypoints.get(srcRect.l));
-		
-		srcPts.add(mSrckeypoints.get(srcRect.r));
-		
+		System.arraycopy(bestCluster, 0, dest, 0, 3);
+		return error;
 	}
 
 	
@@ -293,7 +317,7 @@ public class MagicFunctionMatcher {
 		return error;
 	}
 	
-	public double trySolution(ArrayList<KeyPoint> srcPts, ArrayList<KeyPoint> destPts) {
+	private double trySolution(ArrayList<KeyPoint> srcPts, ArrayList<KeyPoint> destPts) {
 		
 		RealMatrix W = new Array2DRowRealMatrix(srcPts.size(), 3);
 		for(int i=0;i<srcPts.size();i++){
@@ -318,6 +342,28 @@ public class MagicFunctionMatcher {
 		
 	}
 	
+	private double getSolutionError(int[] src, int[] dest) {
+		RealMatrix W = new Array2DRowRealMatrix(3, 3);
+		for(int i=0;i<3;i++){
+			double[] row = new double[3];
+			row[0] = 1;
+			row[1] = mSrckeypoints.get(src[i]).getX();
+			row[2] = row[1]*row[1];
+			W.setRow(i, row);
+		}
+		
+		DecompositionSolver solver = new QRDecomposition(W).getSolver();
+		
+		ArrayRealVector y = new ArrayRealVector(3);
+		for(int i=0;i<3;i++){
+			y.setEntry(i, mDestKeypoints.get(dest[i]).getX());
+		}
+		RealVector solution = solver.solve(y);
+		PolynomialFunction xmapper = new PolynomialFunction(solution.toArray());
+		
+		double error = calcError(xmapper);
+		return error;
+	}
 	
 	
 	

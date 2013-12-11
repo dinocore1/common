@@ -17,10 +17,10 @@ import org.jfree.ui.RefineryUtilities;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.sciaps.common.GaussianFunction;
-import com.sciaps.common.MagicFunctionMatcher;
-import com.sciaps.common.SumFunction;
-import com.sciaps.common.MagicFunctionMatcher.KeyPoint;
+import com.sciaps.common.math.GaussianFunction;
+import com.sciaps.common.math.MagicFunctionMatcher;
+import com.sciaps.common.math.SumFunction;
+import com.sciaps.common.math.MagicFunctionMatcher.KeyPoint;
 import com.sciaps.common.test.GraphView;
 
 public class WavelengthCalibrationTest {
@@ -37,7 +37,7 @@ public class WavelengthCalibrationTest {
 		return retval;
 	}
 
-	public double[] copy(short[] in) {
+	public double[] copy(int[] in) {
 		double[] retval = new double[in.length];
 		for(int i=0;i<in.length;i++){
 			retval[i] = in[i];
